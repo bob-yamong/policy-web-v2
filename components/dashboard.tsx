@@ -40,15 +40,6 @@ const diskData = [
   { name: "Free", value: 266 },
 ];
 
-const containerStatus = [
-  { name: "Container1", status: "up" },
-  { name: "Container2", status: "up" },
-  { name: "Container3", status: "down" },
-  { name: "Container4", status: "up" },
-  { name: "Container5", status: "up" },
-  //이걸 동적으로 변경해야됨
-];
-
 export function Dashboard({ containerList }) {
   return (
     <div className="space-y-6">
