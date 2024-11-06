@@ -75,10 +75,13 @@ export function ContainerPolicyManagerComponent() {
           <Dashboard containerList={containerList} />
         )}
         {activeTab === "policy" && (
-          <PolicyContent onRedirect={handleRedirect} />
+          <PolicyContent
+            onRedirect={handleRedirect}
+            containerList={containerList}
+          />
         )}
         {activeTab === "containers" && (
-          <ContainersContent selectedContainer={selectedContainer} />
+          <ContainersContent containerList={containerList} />
         )}
         {activeTab === "settings" && <SettingsContent />}
       </div>

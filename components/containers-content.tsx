@@ -1,38 +1,58 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Cpu, HardDrive, Database } from 'lucide-react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
-
-const containerList = ['Container1', 'Container2', 'Container3', 'Container4', 'Container5']
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Cpu, Database, HardDrive } from "lucide-react";
+import { useState } from "react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ContainerType } from "./container-policy-manager";
 
 const sampleData = [
-  { name: '00:00', cpu: 40, memory: 24, network: 24 },
-  { name: '03:00', cpu: 30, memory: 13, network: 22 },
-  { name: '06:00', cpu: 20, memory: 98, network: 22 },
-  { name: '09:00', cpu: 27, memory: 39, network: 20 },
-  { name: '12:00', cpu: 18, memory: 48, network: 21 },
-  { name: '15:00', cpu: 23, memory: 38, network: 25 },
-  { name: '18:00', cpu: 34, memory: 43, network: 21 },
-]
+  { name: "00:00", cpu: 40, memory: 24, network: 24 },
+  { name: "03:00", cpu: 30, memory: 13, network: 22 },
+  { name: "06:00", cpu: 20, memory: 98, network: 22 },
+  { name: "09:00", cpu: 27, memory: 39, network: 20 },
+  { name: "12:00", cpu: 18, memory: 48, network: 21 },
+  { name: "15:00", cpu: 23, memory: 38, network: 25 },
+  { name: "18:00", cpu: 34, memory: 43, network: 21 },
+];
 
-export function ContainersContent() {
-  const [selectedContainer, setSelectedContainer] = useState('')
-  const [containerLogOption, setContainerLogOption] = useState('all')
+export function ContainersContent({
+  containerList,
+}: {
+  containerList: ContainerType[];
+}) {
+  const [selectedContainer, setSelectedContainer] = useState("");
+  const [containerLogOption, setContainerLogOption] = useState("all");
 
   const generateLogs = () => {
-    const logTypes = ['INFO', 'DEBUG', 'WARN', 'ERROR']
-    const logs = []
+    const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
+    const logs = [];
     for (let i = 0; i < 100; i++) {
-      const date = new Date(Date.now() - i * 60000)
-      const logType = logTypes[Math.floor(Math.random() * logTypes.length)]
-      logs.push(`[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`)
+      const date = new Date(Date.now() - i * 60000);
+      const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
+      logs.push(
+        `[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`
+      );
     }
-    return logs.join('\n')
-  }
+    return logs.join("\n");
+  };
 
   const renderContainerList = () => (
     <>
@@ -69,30 +89,41 @@ export function ContainersContent() {
       </Card>
       <p className="text-xl mb-4">Total Containers: {containerList.length}</p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {containerList.map(container => (
-          <Card key={container} className="cursor-pointer hover:shadow-md transition-shadow">
-            <CardHeader>
-              <CardTitle>{container}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button onClick={() => setSelectedContainer(container)} className="bg-blue-500 hover:bg-blue-600 text-white">View Details</Button>
-            </CardContent>
-          </Card>
-        ))}
+        {containerList &&
+          containerList.map((container) => (
+            <Card
+              key={container.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <CardTitle>{container.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => setSelectedContainer(container.name)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  View Details
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
       </div>
     </>
-  )
+  );
 
   const renderContainerDetails = () => (
     <>
-      <Button 
-        variant="outline" 
-        className="mb-4" 
-        onClick={() => setSelectedContainer('')}
+      <Button
+        variant="outline"
+        className="mb-4"
+        onClick={() => setSelectedContainer("")}
       >
         Back to Containers
       </Button>
-      <h1 className="text-3xl font-bold mb-6 text-blue-700">Container Details: {selectedContainer}</h1>
+      <h1 className="text-3xl font-bold mb-6 text-blue-700">
+        Container Details: {selectedContainer}
+      </h1>
       <div className="space-y-6">
         <Card>
           <CardHeader>
@@ -100,7 +131,10 @@ export function ContainersContent() {
           </CardHeader>
           <CardContent>
             <div className="mb-4">
-              <Select value={containerLogOption} onValueChange={setContainerLogOption}>
+              <Select
+                value={containerLogOption}
+                onValueChange={setContainerLogOption}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select log option" />
                 </SelectTrigger>
@@ -130,9 +164,24 @@ export function ContainersContent() {
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  <Line type="monotone" dataKey="cpu" stroke="#3b82f6" name="CPU (%)" />
-                  <Line type="monotone" dataKey="memory" stroke="#10b981" name="Memory (%)" />
-                  <Line type="monotone" dataKey="network" stroke="#f59e0b" name="Network (Mbps)" />
+                  <Line
+                    type="monotone"
+                    dataKey="cpu"
+                    stroke="#3b82f6"
+                    name="CPU (%)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="memory"
+                    stroke="#10b981"
+                    name="Memory (%)"
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="network"
+                    stroke="#f59e0b"
+                    name="Network (Mbps)"
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -140,7 +189,7 @@ export function ContainersContent() {
         </Card>
       </div>
     </>
-  )
+  );
 
-  return selectedContainer ? renderContainerDetails() : renderContainerList()
+  return selectedContainer ? renderContainerDetails() : renderContainerList();
 }

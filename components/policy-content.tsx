@@ -15,19 +15,14 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const containerList = [
-  "Container1",
-  "Container2",
-  "Container3",
-  "Container4",
-  "Container5",
-];
+import { ContainerType } from "./container-policy-manager";
 
 export function PolicyContent({
   onRedirect,
+  containerList,
 }: {
   onRedirect: (page: string, container: string) => void;
+  containerList: ContainerType[];
 }) {
   const [selectedContainer, setSelectedContainer] = useState("");
   const [policyOption, setPolicyOption] = useState("");
@@ -135,24 +130,25 @@ export function PolicyContent({
         Select Container
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {containerList.map((container) => (
-          <Card
-            key={container}
-            className="cursor-pointer hover:shadow-md transition-shadow"
-          >
-            <CardHeader>
-              <CardTitle>{container}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Button
-                onClick={() => setSelectedContainer(container)}
-                className="bg-blue-500 hover:bg-blue-600 text-white"
-              >
-                Select
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+        {containerList &&
+          containerList.map((container) => (
+            <Card
+              key={container.id}
+              className="cursor-pointer hover:shadow-md transition-shadow"
+            >
+              <CardHeader>
+                <CardTitle>{container.name}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => setSelectedContainer(container.name)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >
+                  Select
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
       </div>
     </>
   );
