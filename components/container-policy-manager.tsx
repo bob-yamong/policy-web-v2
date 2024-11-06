@@ -9,8 +9,8 @@ import { PolicyContent } from "./policy-content";
 import { SettingsContent } from "./settings-content";
 import { Sidebar } from "./sidebar";
 
-const BASE_URL = "http://113.198.229.153:4001/api/v1";
-const SERVER_NUMBER = 13;
+export const BASE_URL = "http://113.198.229.153:4001/api/v1"; //나중에 환경변수로 빼자
+export const SERVER_NUMBER = 13;
 
 export interface ContainerType {
   cgroup_id: number;

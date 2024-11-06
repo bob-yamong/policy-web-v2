@@ -13,9 +13,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import axios from "axios";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ContainerType } from "./container-policy-manager";
+import {
+  BASE_URL,
+  ContainerType,
+  SERVER_NUMBER,
+} from "./container-policy-manager";
+
+export interface containerPropsType {
+  name: string;
+  id: number;
+}
 
 export function PolicyContent({
   onRedirect,
@@ -24,7 +34,8 @@ export function PolicyContent({
   onRedirect: (page: string, container: string) => void;
   containerList: ContainerType[];
 }) {
-  const [selectedContainer, setSelectedContainer] = useState("");
+  const [selectedContainer, setSelectedContainer] =
+    useState<containerPropsType>();
   const [policyOption, setPolicyOption] = useState("");
   const [loggingOption, setLoggingOption] = useState("medium");
   const [createPolicyOption, setCreatePolicyOption] = useState("");
@@ -41,6 +52,7 @@ export function PolicyContent({
     protocol: "tcp",
   });
   const [sudoUid, setSudoUid] = useState("");
+  const [policies, setPolicies] = useState([]);
 
   const renderPolicyYaml = () => {
     const policyYaml = `apiVersion: v1
@@ -101,6 +113,19 @@ export function PolicyContent({
     }
   }, [customPolicyStep]);
 
+  useEffect(() => {
+    if (selectedContainer)
+      axios
+        .get(
+          `${BASE_URL}/policy/container/${selectedContainer.id}?server_id=${SERVER_NUMBER}`
+        )
+        .then((res) => {
+          setPolicies(res.data.policies);
+          console.log(res.data);
+        })
+        .catch((err) => console.log(err));
+  }, [selectedContainer]);
+
   const toggleAction = (action: string) => {
     setSelectedActions((prev) =>
       prev.includes(action)
@@ -114,7 +139,7 @@ export function PolicyContent({
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      onRedirect("containers", selectedContainer);
+      onRedirect("containers", selectedContainer.name);
     }, 2000);
   };
 
@@ -141,7 +166,12 @@ export function PolicyContent({
               </CardHeader>
               <CardContent>
                 <Button
-                  onClick={() => setSelectedContainer(container.name)}
+                  onClick={() =>
+                    setSelectedContainer({
+                      name: container.name,
+                      id: container.id,
+                    })
+                  }
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   Select
@@ -155,9 +185,9 @@ export function PolicyContent({
 
   const renderPolicyOptions = () => (
     <>
-      {renderBackButton(() => setSelectedContainer(""))}
+      {renderBackButton(() => setSelectedContainer(null))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Policy Options for {selectedContainer}
+        Policy Options for {selectedContainer.name}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card
@@ -201,7 +231,7 @@ export function PolicyContent({
     <>
       {renderBackButton(() => setPolicyOption(""))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Applied Policies for {selectedContainer}
+        Applied Policies for {selectedContainer.name}
       </h1>
       <Card>
         <CardHeader>
@@ -209,9 +239,54 @@ export function PolicyContent({
         </CardHeader>
         <CardContent>
           <ul className="list-disc list-inside">
-            <li>Network: Block incoming connections on port 22</li>
-            <li>Filesystem: Restrict write access to /etc directory</li>
-            <li>Process: Prevent execution of sudo command</li>
+            {policies &&
+              policies.map((policy, index) => (
+                <li key={index} className="mb-6">
+                  <pre className="bg-gray-50 p-4 rounded-lg shadow-md text-sm whitespace-pre-wrap">
+                    api_version: {policy.api_version}
+                    {"\n"}name: {policy.name}
+                    {"\n"}policy:
+                    <div className="ml-4">
+                      container_name: {policy.policy.container_name}
+                      {"\n"}lsm_policies:
+                      <div className="ml-4">
+                        file:
+                        {policy.policy.lsm_policies.file.map(
+                          (filePolicy, fileIndex) => (
+                            <div key={fileIndex} className="ml-6">
+                              - path: {filePolicy.path}
+                              {"\n"} flags: [{filePolicy.flags.join(", ")}]
+                              {"\n"} uid: [{filePolicy.uid.join(", ")}]
+                            </div>
+                          )
+                        )}
+                        {"\n"}network:
+                        {policy.policy.lsm_policies.network.map(
+                          (netPolicy, netIndex) => (
+                            <div key={netIndex} className="ml-6">
+                              - ip: {netPolicy.ip}
+                              {"\n"} port: {netPolicy.port}
+                              {"\n"} protocol: {netPolicy.protocol}
+                              {"\n"} flags: [{netPolicy.flags.join(", ")}]{"\n"}{" "}
+                              uid: [{netPolicy.uid.join(", ")}]
+                            </div>
+                          )
+                        )}
+                        {"\n"}process:
+                        {policy.policy.lsm_policies.process.map(
+                          (procPolicy, procIndex) => (
+                            <div key={procIndex} className="ml-6">
+                              - comm: {procPolicy.comm}
+                              {"\n"} flags: [{procPolicy.flags.join(", ")}]
+                              {"\n"} uid: [{procPolicy.uid.join(", ")}]
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  </pre>
+                </li>
+              ))}
           </ul>
         </CardContent>
       </Card>
@@ -222,7 +297,7 @@ export function PolicyContent({
     <>
       {renderBackButton(() => setPolicyOption(""))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Logging Options for {selectedContainer}
+        Logging Options for {selectedContainer.name}
       </h1>
       <Card>
         <CardHeader>
@@ -290,7 +365,7 @@ export function PolicyContent({
     <>
       {renderBackButton(() => setPolicyOption(""))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Create Policy for {selectedContainer}
+        Create Policy for {selectedContainer.name}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card
