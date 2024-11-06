@@ -1,47 +1,59 @@
-'use client'
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 const cpuData = [
-  { time: '00:00', core1: 30, core2: 40, core3: 20, core4: 50 },
-  { time: '01:00', core1: 40, core2: 30, core3: 40, core4: 35 },
-  { time: '02:00', core1: 45, core2: 55, core3: 30, core4: 40 },
-  { time: '03:00', core1: 35, core2: 45, core3: 50, core4: 30 },
-  { time: '04:00', core1: 50, core2: 35, core3: 40, core4: 45 },
-]
+  { time: "00:00", core1: 30, core2: 40, core3: 20, core4: 50 },
+  { time: "01:00", core1: 40, core2: 30, core3: 40, core4: 35 },
+  { time: "02:00", core1: 45, core2: 55, core3: 30, core4: 40 },
+  { time: "03:00", core1: 35, core2: 45, core3: 50, core4: 30 },
+  { time: "04:00", core1: 50, core2: 35, core3: 40, core4: 45 },
+];
 
 const networkData = [
-  { time: '00:00', in: 100, out: 50 },
-  { time: '01:00', in: 120, out: 60 },
-  { time: '02:00', in: 90, out: 70 },
-  { time: '03:00', in: 150, out: 80 },
-  { time: '04:00', in: 110, out: 55 },
-]
+  { time: "00:00", in: 100, out: 50 },
+  { time: "01:00", in: 120, out: 60 },
+  { time: "02:00", in: 90, out: 70 },
+  { time: "03:00", in: 150, out: 80 },
+  { time: "04:00", in: 110, out: 55 },
+];
 
 const memoryData = [
-  { name: 'Used', value: 8 },
-  { name: 'Free', value: 8 },
-]
+  { name: "Used", value: 8 },
+  { name: "Free", value: 8 },
+];
 
 const diskData = [
-  { name: 'Used', value: 234 },
-  { name: 'Free', value: 266 },
-]
+  { name: "Used", value: 234 },
+  { name: "Free", value: 266 },
+];
 
 const containerStatus = [
-  { name: 'Container1', status: 'up' },
-  { name: 'Container2', status: 'up' },
-  { name: 'Container3', status: 'down' },
-  { name: 'Container4', status: 'up' },
-  { name: 'Container5', status: 'up' },
-]
+  { name: "Container1", status: "up" },
+  { name: "Container2", status: "up" },
+  { name: "Container3", status: "down" },
+  { name: "Container4", status: "up" },
+  { name: "Container5", status: "up" },
+  //이걸 동적으로 변경해야됨
+];
 
-export function Dashboard() {
+export function Dashboard({ containerList }) {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-blue-700">Dashboard</h1>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>CPU Usage per Core</CardTitle>
@@ -79,7 +91,12 @@ export function Dashboard() {
                 <Tooltip />
                 <Legend />
                 <Line type="monotone" dataKey="in" stroke="#8884d8" name="In" />
-                <Line type="monotone" dataKey="out" stroke="#82ca9d" name="Out" />
+                <Line
+                  type="monotone"
+                  dataKey="out"
+                  stroke="#82ca9d"
+                  name="Out"
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -136,16 +153,22 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {containerStatus.map((container) => (
+            {containerList.map((container) => (
               <div key={container.name} className="text-center">
-                <div className={`w-4 h-4 rounded-full mx-auto mb-2 ${container.status === 'up' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <div
+                  className={`w-4 h-4 rounded-full mx-auto mb-2 ${
+                    container.remove_at ? "bg-red-500" : "bg-green-500"
+                  }`}
+                ></div>
                 <p>{container.name}</p>
-                <p className="text-sm text-gray-500 capitalize">{container.status}</p>
+                <p className="text-sm text-gray-500 capitalize">
+                  {container.remove_at}
+                </p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
