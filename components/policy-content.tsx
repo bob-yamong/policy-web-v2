@@ -56,6 +56,50 @@ export function PolicyContent({
   const [sudoUid, setSudoUid] = useState("");
   const [policies, setPolicies] = useState([]);
 
+  const predefinedPolicy =JSON.stringify(
+    //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
+    {
+      api_version: "v1",
+      name: `${selectedPredefinedPolicy.toLowerCase().replace(/ /g, "-")} for ${selectedContainer.name}`,
+      containers: [
+        {
+          container_name: selectedContainer?.name || "",
+          raw_tp: "true",
+          tracepoint_policy: {
+            tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
+          },
+          lsm_policies: {
+            file: [
+              {
+                flags: [],
+                uid: [],
+                path: "/path/to/file",
+              },
+            ],
+            network: [
+              {
+                flags: [],
+                uid: [],
+                ip: "0.0.0.0",
+                port: 22,
+                protocol: 1, // tcp 예시
+              },
+            ],
+            process: [
+              {
+                flags: [],
+                uid: [],
+                comm: "example-process",
+              },
+            ],
+          },
+        },
+      ],
+    },
+    null,
+    2
+  )
+
   const renderPolicyYaml = (): string => {
     const policyName = window.prompt("policy name?")
     const policy = {
@@ -135,11 +179,12 @@ export function PolicyContent({
     );
   };
 
-  const handleApplyPolicy = () => {
+  const handleApplyPolicy = (isPredefined?:boolean) => {
+    // predefined냐에 따라서, 여기서 정책 파일을 받아서 바로 서버에 넘기는 형식으로 변경해야 됨
     setIsLoading(true);
 
     console.log("API loading...")
-    const policyData = JSON.parse(finalPolicy);
+    const policyData = isPredefined ? JSON.parse(predefinedPolicy):JSON.parse(finalPolicy);
     axios.post(`${BASE_URL}/policy/custom`,policyData, {headers: {
       "Content-Type": "application/json",
     },}).then((res)=>{console.log(res);
@@ -400,32 +445,26 @@ export function PolicyContent({
   );
 
   const renderPredefinedPolicies = () => (
+    
     <>
       {renderBackButton(() => setCreatePolicyOption(""))}
-      <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Predefined Policies
-      </h1>
+      <h1 className="text-3xl font-bold mb-6 text-blue-700">Predefined Policies</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {["Web Server Rules", "Block Root User", "Block Container Escape"].map(
-          (policy) => (
-            <Card
-              key={policy}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <CardHeader>
-                <CardTitle>{policy}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setSelectedPredefinedPolicy(policy)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  View Policy
-                </Button>
-              </CardContent>
-            </Card>
-          )
-        )}
+        {["Web Server Rules", "Block Root User", "Block Container Escape"].map((policy) => (
+          <Card key={policy} className="cursor-pointer hover:shadow-md transition-shadow">
+            <CardHeader>
+              <CardTitle>{policy}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => setSelectedPredefinedPolicy(policy)}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                View Policy
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
       {selectedPredefinedPolicy && (
         <Card className="mt-6">
@@ -434,26 +473,10 @@ export function PolicyContent({
           </CardHeader>
           <CardContent>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-              {`apiVersion: v1
-kind: Policy
-metadata:
-  name: ${selectedPredefinedPolicy.toLowerCase().replace(/ /g, "-")}
-spec:
-  rules:
-    - name: example-rule
-      match:
-        resources:
-          - type: Container
-      actions:
-        - type: Block
-          resource: Network
-          conditions:
-            - key: port
-              operator: Equals
-              value: "22"`}
+              {predefinedPolicy}
             </pre>
             <Button
-              onClick={handleApplyPolicy}
+              onClick={()=>handleApplyPolicy(true)}
               className="mt-4 bg-green-500 hover:bg-green-600 text-white"
             >
               Apply Policy
@@ -687,7 +710,7 @@ spec:
             {finalPolicy}
           </pre>
           <Button
-            onClick={handleApplyPolicy}
+            onClick={()=>handleApplyPolicy()}
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             Apply Policy
