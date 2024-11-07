@@ -3,7 +3,9 @@
 import { Button } from "@/components/ui/button"
 import { FileText, Box, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 
-export function Sidebar({ activeTab, setActiveTab, onLogout }: { activeTab: string, setActiveTab: (tab: string) => void, onLogout: () => void }) {
+import {activeTabType} from "./container-policy-manager"
+
+export function Sidebar({ activeTab, setActiveTab, onLogout }: { activeTab: activeTabType, setActiveTab: (activeTab: activeTabType) => void, onLogout: () => void }) {
   return (
     <div className="w-64 bg-blue-800 text-white shadow-md flex flex-col h-screen">
       <div className="p-4 flex flex-col flex-1">
@@ -27,7 +29,7 @@ export function Sidebar({ activeTab, setActiveTab, onLogout }: { activeTab: stri
                 className={`w-full flex-1 flex flex-col items-center justify-center text-white ${
                   isActive ? 'bg-blue-700 text-xl' : 'text-lg'
                 } hover:bg-blue-500`}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setActiveTab(tab as activeTabType)}
               >
                 <Icon className={`mb-1 ${isActive ? 'h-20 w-20' : 'h-6 w-6'}`} />
                 <span className={`${isActive ? 'font-semibold' : ''}`}>{label}</span>

@@ -31,29 +31,28 @@ const sampleData = [
   { name: "12:00", cpu: 18, memory: 48, network: 21 },
   { name: "15:00", cpu: 23, memory: 38, network: 25 },
   { name: "18:00", cpu: 34, memory: 43, network: 21 },
+  //이건 나중에 동적으로 변경
 ];
 
-export function ContainersContent({
-  containerList,
-}: {
-  containerList: ContainerType[];
-}) {
+const generateLogs = () => {
+  const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
+  const logs = [];
+  for (let i = 0; i < 100; i++) {
+    const date = new Date(Date.now() - i * 60000);
+    const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
+    logs.push(
+      `[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`
+    );
+  }
+  return logs.join("\n");
+};
+
+export const ContainersContent = ({ containerList }: { containerList: ContainerType[] }) => {
+  
   const [selectedContainer, setSelectedContainer] = useState("");
   const [containerLogOption, setContainerLogOption] = useState("all");
 
-  const generateLogs = () => {
-    const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
-    const logs = [];
-    for (let i = 0; i < 100; i++) {
-      const date = new Date(Date.now() - i * 60000);
-      const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
-      logs.push(
-        `[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`
-      );
-    }
-    return logs.join("\n");
-  };
-
+  
   const renderContainerList = () => (
     <>
       <h1 className="text-3xl font-bold mb-6 text-blue-700">Containers</h1>

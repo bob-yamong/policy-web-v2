@@ -26,12 +26,12 @@ export interface ContainerType {
   tag: any[];
 }
 
-type actvieTabType = "dashboard"|"policy"|"containers"|"settings"
+export type activeTabType = "dashboard"|"policy"|"containers"|"settings"
 
 
 export const ContainerPolicyManagerComponent = () => {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<actvieTabType>("dashboard");
+  const [activeTab, setActiveTab] = useState<activeTabType>("dashboard");
   const [containerList, setContainerList] = useState<ContainerType[]>([]);
 
   useEffect(() => {
@@ -55,7 +55,7 @@ export const ContainerPolicyManagerComponent = () => {
     setActiveTab("dashboard");
   };
 
-  const handleRedirect = (page: actvieTabType) => {
+  const handleRedirect = (page: activeTabType) => {
     setActiveTab(page);
   };
 
@@ -67,7 +67,7 @@ export const ContainerPolicyManagerComponent = () => {
     <div className="flex h-screen bg-gray-100">
       <Sidebar
         activeTab={activeTab}
-        setActiveTab={()=>setActiveTab('dashboard')}
+        setActiveTab={setActiveTab}
         onLogout={handleLogout}
       />
       <div className="flex-1 p-8 overflow-y-auto">
@@ -76,7 +76,7 @@ export const ContainerPolicyManagerComponent = () => {
         )}
         {activeTab === "policy" && (
           <PolicyContent
-            onRedirect={handleRedirect}
+            onRedirect={()=>handleRedirect('policy')}
             containerList={containerList}
           />
         )}
