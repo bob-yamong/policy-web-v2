@@ -27,15 +27,15 @@ export interface containerPropsType {
   id: number;
 }
 
+//여기부터 리팩터링 다시
 
-
-export function PolicyContent({
+export const PolicyContent = ({
   onRedirect,
   containerList,
 }: {
   onRedirect: (page: string, container: string) => void;
   containerList: ContainerType[];
-}) {
+}) => {
   const [selectedContainer, setSelectedContainer] =
     useState<containerPropsType>();
   const [policyOption, setPolicyOption] = useState("");
@@ -43,7 +43,6 @@ export function PolicyContent({
   const [createPolicyOption, setCreatePolicyOption] = useState("");
   const [selectedPredefinedPolicy, setSelectedPredefinedPolicy] = useState("");
   const [selectedArgument, setSelectedArgument] = useState("");
-  const [isBlacklist, setIsBlacklist] = useState(true);
   const [customPolicyStep, setCustomPolicyStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [finalPolicy, setFinalPolicy] = useState("");
@@ -55,50 +54,6 @@ export function PolicyContent({
   });
   const [sudoUid, setSudoUid] = useState("");
   const [policies, setPolicies] = useState([]);
-
-  // const predefinedPolicy =JSON.stringify(
-  //   //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
-  //   {
-  //     api_version: "v1",
-  //     name: `${selectedPredefinedPolicy.toLowerCase().replace(/ /g, "-")} for ${selectedContainer.name}`,
-  //     containers: [
-  //       {
-  //         container_name: selectedContainer?.name || "",
-  //         raw_tp: "true",
-  //         tracepoint_policy: {
-  //           tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
-  //         },
-  //         lsm_policies: {
-  //           file: [
-  //             {
-  //               flags: [],
-  //               uid: [],
-  //               path: "/path/to/file",
-  //             },
-  //           ],
-  //           network: [
-  //             {
-  //               flags: [],
-  //               uid: [],
-  //               ip: "0.0.0.0",
-  //               port: 22,
-  //               protocol: 1, // tcp 예시
-  //             },
-  //           ],
-  //           process: [
-  //             {
-  //               flags: [],
-  //               uid: [],
-  //               comm: "example-process",
-  //             },
-  //           ],
-  //         },
-  //       },
-  //     ],
-  //   },
-  //   null,
-  //   2
-  // )
 
   const renderPolicyYaml = (): string => {
     const policyName = window.prompt("policy name?")

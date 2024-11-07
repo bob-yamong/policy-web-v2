@@ -5,7 +5,7 @@ import { FileText, Box, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 
 import {activeTabType} from "./container-policy-manager"
 
-export function Sidebar({ activeTab, setActiveTab, onLogout }: { activeTab: activeTabType, setActiveTab: (activeTab: activeTabType) => void, onLogout: () => void }) {
+export const Sidebar = ({ activeTab, setActiveTab, onLogout }: { activeTab: activeTabType, setActiveTab: (activeTab: activeTabType) => void, onLogout: () => void }) => {
   return (
     <div className="w-64 bg-blue-800 text-white shadow-md flex flex-col h-screen">
       <div className="p-4 flex flex-col flex-1">

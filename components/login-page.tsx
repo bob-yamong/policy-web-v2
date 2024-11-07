@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AlertCircle } from 'lucide-react'
 
-export function LoginPage({ onLogin }: { onLogin: (username: string, password: string) => void }) {
+export const  LoginPage = ({ onLogin }: { onLogin: (username: string, password: string) => void }) => {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

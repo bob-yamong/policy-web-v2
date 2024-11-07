@@ -17,7 +17,7 @@ import { cpuData,networkData,diskData,memoryData,ResourceDataType,LineType,CPU_L
 import { ContainerType } from "./container-policy-manager";
 
 
-export function Dashboard({ containerList}:{containerList:ContainerType[]}) {
+export const Dashboard = ({ containerList}:{containerList:ContainerType[]}) => {
 
   const ResoureGraph = ({title, data, lineArray} : {title:string, data :ResourceDataType, lineArray:LineType[]}) => {
     
@@ -37,7 +37,7 @@ export function Dashboard({ containerList}:{containerList:ContainerType[]}) {
               <Legend />
               {lineArray.map((line)=>{
                 return(
-                  <Line type="monotone" dataKey={line.dataKey} stroke={line.stroke}/>
+                  <Line key={line.dataKey} type="monotone" dataKey={line.dataKey} stroke={line.stroke}/>
                 )
               })}
             </LineChart>
