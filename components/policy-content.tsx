@@ -27,6 +27,8 @@ export interface containerPropsType {
   id: number;
 }
 
+
+
 export function PolicyContent({
   onRedirect,
   containerList,
@@ -54,56 +56,55 @@ export function PolicyContent({
   const [sudoUid, setSudoUid] = useState("");
   const [policies, setPolicies] = useState([]);
 
-  const renderPolicyYaml = () => {
-    const policyYaml = `apiVersion: v1
-    kind: Policy
-    metadata:
-      name: custom-policy
-    spec:
-      rules:
-        ${selectedActions
-          .map(
-            (action) => `
-        - name: ${action}
-          match:
-            resources:
-              - type: Container
-          actions:
-            - type: Block
-              resource: ${
-                action.split("-")[1].charAt(0).toUpperCase() +
-                action.split("-")[1].slice(1)
-              }
-              conditions:
-                ${
-                  action.includes("network")
-                    ? `
-                - key: ip
-                  operator: Equals
-                  value: "${networkInputs.ip}"
-                - key: port
-                  operator: Equals
-                  value: "${networkInputs.port}"
-                - key: protocol
-                  operator: Equals
-                  value: "${networkInputs.protocol}"
-                `
-                    : action === "block-sudo"
-                    ? `
-                - key: uid
-                  operator: Equals
-                  value: "${sudoUid}"
-                `
-                    : `
-                - key: ${action.includes("file") ? "path" : "name"}
-                  operator: Equals
-                  value: "${selectedArgument}"
-                `
-                }`
-          )
-          .join("\n")}
-    `;
-    return policyYaml;
+  const renderPolicyYaml = (): string => {
+    const policyName = window.prompt("policy name?")
+    const policy = {
+      api_version: "v1",
+      name: policyName,
+      containers: [
+        {
+          container_name: selectedContainer?.name || "",
+          raw_tp: "true", 
+          tracepoint_policy: {
+            tracepoints: selectedActions.filter((action) =>
+              action.includes("tracepoint")
+            ),
+          },
+          lsm_policies: {
+            file: selectedActions
+              .filter((action) => action.includes("file"))
+              .map(() => ({
+                flags: [], 
+                uid: [], 
+                path: selectedArgument || "", 
+              })),
+            network: selectedActions
+              .filter((action) => action.includes("network"))
+              .map(() => ({
+                flags: [], 
+                uid: [], 
+                ip: networkInputs.ip || "",
+                port: Number(networkInputs.port) || 0,
+                protocol:
+                  networkInputs.protocol === "tcp"
+                    ? 1
+                    : networkInputs.protocol === "udp"
+                    ? 2
+                    : 0, // 예시: tcp=1, udp=2
+              })),
+            process: selectedActions
+              .filter((action) => action.includes("process"))
+              .map(() => ({
+                flags: [], 
+                uid: [], 
+                comm: selectedArgument || "", 
+              })),
+          },
+        },
+      ],
+    };
+  
+    return JSON.stringify(policy, null, 2); 
   };
 
   useEffect(() => {
@@ -136,11 +137,15 @@ export function PolicyContent({
 
   const handleApplyPolicy = () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      onRedirect("containers", selectedContainer.name);
-    }, 2000);
+
+    console.log("API loading...")
+    const policyData = JSON.parse(finalPolicy);
+    axios.post(`${BASE_URL}/policy/custom`,policyData, {headers: {
+      "Content-Type": "application/json",
+    },}).then((res)=>{console.log(res);
+        setIsLoading(false);
+        onRedirect("containers", selectedContainer.name);
+    }).catch((err)=>console.log(err))
   };
 
   const renderBackButton = (onClick: () => void) => (
@@ -674,7 +679,7 @@ spec:
       //const policyYaml = renderPolicyYaml();
 
       // setFinalPolicy(policyYaml);
-
+      console.log(finalPolicy)
       return (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Final Policy</h2>
