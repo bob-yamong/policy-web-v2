@@ -22,39 +22,42 @@ import {
   YAxis,
 } from "recharts";
 import { ContainerType } from "./container-policy-manager";
+import { sampleData } from "./data/Mock";
 
-const sampleData = [
-  { name: "00:00", cpu: 40, memory: 24, network: 24 },
-  { name: "03:00", cpu: 30, memory: 13, network: 22 },
-  { name: "06:00", cpu: 20, memory: 98, network: 22 },
-  { name: "09:00", cpu: 27, memory: 39, network: 20 },
-  { name: "12:00", cpu: 18, memory: 48, network: 21 },
-  { name: "15:00", cpu: 23, memory: 38, network: 25 },
-  { name: "18:00", cpu: 34, memory: 43, network: 21 },
-];
+type logOption = "all" | "error" | "warn" | "info";
 
-export function ContainersContent({
-  containerList,
-}: {
-  containerList: ContainerType[];
-}) {
-  const [selectedContainer, setSelectedContainer] = useState("");
-  const [containerLogOption, setContainerLogOption] = useState("all");
 
-  const generateLogs = () => {
-    const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
-    const logs = [];
-    for (let i = 0; i < 100; i++) {
-      const date = new Date(Date.now() - i * 60000);
-      const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
-      logs.push(
-        `[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`
-      );
-    }
-    return logs.join("\n");
-  };
+const generateLogs = () => {
+  const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
+  const logs = [];
+  for (let i = 0; i < 100; i++) {
+    const date = new Date(Date.now() - i * 60000);
+    const logType = logTypes[Math.floor(Math.random() * logTypes.length)];
+    logs.push(
+      `[${date.toISOString()}] ${logType}: Sample log message ${i + 1}`
+    );
+  }
+  return logs.join("\n");
+};
 
-  const renderContainerList = () => (
+
+
+export const ContainersContent = ({ containerList }: { containerList: ContainerType[] }) => {
+  
+  const [selectedContainer, setSelectedContainer] = useState<ContainerType>();
+  const [containerLogOption, setContainerLogOption] = useState<logOption>("all");
+
+  const ResourceInfo = ({UsageTitle,Usage} : {UsageTitle:string,Usage:string}) => {
+    return(
+    <div>
+      <p className="text-sm text-gray-500">{UsageTitle}</p>
+      <p className="text-lg font-semibold">{Usage}</p>
+    </div>
+    )
+  }
+
+  const renderContainerList = () => {
+    return(
     <>
       <h1 className="text-3xl font-bold mb-6 text-blue-700">Containers</h1>
       <Card className="mb-6">
@@ -65,24 +68,15 @@ export function ContainersContent({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex items-center">
               <Cpu className="h-8 w-8 mr-2 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">CPU Usage</p>
-                <p className="text-lg font-semibold">65%</p>
+              <ResourceInfo UsageTitle="CPU Usage" Usage="65%" />
               </div>
-            </div>
             <div className="flex items-center">
               <HardDrive className="h-8 w-8 mr-2 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">Memory Usage</p>
-                <p className="text-lg font-semibold">8.2 GB / 16 GB</p>
-              </div>
+              <ResourceInfo UsageTitle="Memory Usage" Usage="8.2 GB / 16 GB" />
             </div>
             <div className="flex items-center">
               <Database className="h-8 w-8 mr-2 text-blue-500" />
-              <div>
-                <p className="text-sm text-gray-500">Storage Usage</p>
-                <p className="text-lg font-semibold">234 GB / 500 GB</p>
-              </div>
+              <ResourceInfo UsageTitle="Storage Usage" Usage="234 GB / 500 GB" />             
             </div>
           </div>
         </CardContent>
@@ -100,7 +94,7 @@ export function ContainersContent({
               </CardHeader>
               <CardContent>
                 <Button
-                  onClick={() => setSelectedContainer(container.name)}
+                  onClick={() => setSelectedContainer(container)}
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >
                   View Details
@@ -110,19 +104,19 @@ export function ContainersContent({
           ))}
       </div>
     </>
-  );
+  )};
 
   const renderContainerDetails = () => (
     <>
       <Button
         variant="outline"
         className="mb-4"
-        onClick={() => setSelectedContainer("")}
+        onClick={() => setSelectedContainer(null)}
       >
         Back to Containers
       </Button>
       <h1 className="text-3xl font-bold mb-6 text-blue-700">
-        Container Details: {selectedContainer}
+        Container Details: {selectedContainer.name}
       </h1>
       <div className="space-y-6">
         <Card>
@@ -133,8 +127,8 @@ export function ContainersContent({
             <div className="mb-4">
               <Select
                 value={containerLogOption}
-                onValueChange={setContainerLogOption}
-              >
+                onValueChange={(value: logOption) => setContainerLogOption(value)}
+                >
                 <SelectTrigger>
                   <SelectValue placeholder="Select log option" />
                 </SelectTrigger>
@@ -164,6 +158,7 @@ export function ContainersContent({
                   <YAxis />
                   <Tooltip />
                   <Legend />
+                  {/* Line을 map을 돌리는게 나을지는 추후 고민 */}
                   <Line
                     type="monotone"
                     dataKey="cpu"

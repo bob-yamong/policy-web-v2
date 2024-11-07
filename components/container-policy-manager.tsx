@@ -26,22 +26,24 @@ export interface ContainerType {
   tag: any[];
 }
 
-export function ContainerPolicyManagerComponent() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+export type activeTabType = "dashboard"|"policy"|"containers"|"settings"
+
+
+export const ContainerPolicyManagerComponent = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<activeTabType>("dashboard");
   const [containerList, setContainerList] = useState<ContainerType[]>([]);
-  const [selectedContainer, setSelectedContainer] = useState("");
 
   useEffect(() => {
-    //렌더링하면 받아오고, 그 다음에 이걸 대시보드에 넘겨야함
-    axios
+    if(isLoggedIn){
+      axios
       .get(`${BASE_URL}/container/${SERVER_NUMBER}`)
       .then((res) => {
-        console.log(res.data);
         setContainerList(res.data.containers);
       })
-      .catch((err) => console.log(err));
-  }, []);
+      .catch((err) => {console.log(err);window.alert("Login Failed")});
+    }else{}
+  }, [isLoggedIn]);
 
   const handleLogin = (username: string, password: string) => {
     // In a real application, you would validate the credentials here
@@ -51,12 +53,10 @@ export function ContainerPolicyManagerComponent() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setActiveTab("dashboard");
-    setSelectedContainer("");
   };
 
-  const handleRedirect = (page: string, container: string) => {
+  const handleRedirect = (page: activeTabType) => {
     setActiveTab(page);
-    setSelectedContainer(container);
   };
 
   if (!isLoggedIn) {
@@ -76,7 +76,7 @@ export function ContainerPolicyManagerComponent() {
         )}
         {activeTab === "policy" && (
           <PolicyContent
-            onRedirect={handleRedirect}
+            onRedirect={()=>handleRedirect('policy')}
             containerList={containerList}
           />
         )}
