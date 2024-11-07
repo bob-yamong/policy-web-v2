@@ -22,19 +22,10 @@ import {
   YAxis,
 } from "recharts";
 import { ContainerType } from "./container-policy-manager";
+import { sampleData } from "./data/Mock";
 
 type logOption = "all" | "error" | "warn" | "info";
 
-const sampleData = [
-  { name: "00:00", cpu: 40, memory: 24, network: 24 },
-  { name: "03:00", cpu: 30, memory: 13, network: 22 },
-  { name: "06:00", cpu: 20, memory: 98, network: 22 },
-  { name: "09:00", cpu: 27, memory: 39, network: 20 },
-  { name: "12:00", cpu: 18, memory: 48, network: 21 },
-  { name: "15:00", cpu: 23, memory: 38, network: 25 },
-  { name: "18:00", cpu: 34, memory: 43, network: 21 },
-  //이건 나중에 동적으로 변경
-];
 
 const generateLogs = () => {
   const logTypes = ["INFO", "DEBUG", "WARN", "ERROR"];
