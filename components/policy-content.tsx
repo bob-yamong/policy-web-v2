@@ -56,49 +56,49 @@ export function PolicyContent({
   const [sudoUid, setSudoUid] = useState("");
   const [policies, setPolicies] = useState([]);
 
-  const predefinedPolicy =JSON.stringify(
-    //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
-    {
-      api_version: "v1",
-      name: `${selectedPredefinedPolicy.toLowerCase().replace(/ /g, "-")} for ${selectedContainer.name}`,
-      containers: [
-        {
-          container_name: selectedContainer?.name || "",
-          raw_tp: "true",
-          tracepoint_policy: {
-            tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
-          },
-          lsm_policies: {
-            file: [
-              {
-                flags: [],
-                uid: [],
-                path: "/path/to/file",
-              },
-            ],
-            network: [
-              {
-                flags: [],
-                uid: [],
-                ip: "0.0.0.0",
-                port: 22,
-                protocol: 1, // tcp 예시
-              },
-            ],
-            process: [
-              {
-                flags: [],
-                uid: [],
-                comm: "example-process",
-              },
-            ],
-          },
-        },
-      ],
-    },
-    null,
-    2
-  )
+  // const predefinedPolicy =JSON.stringify(
+  //   //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
+  //   {
+  //     api_version: "v1",
+  //     name: `${selectedPredefinedPolicy.toLowerCase().replace(/ /g, "-")} for ${selectedContainer.name}`,
+  //     containers: [
+  //       {
+  //         container_name: selectedContainer?.name || "",
+  //         raw_tp: "true",
+  //         tracepoint_policy: {
+  //           tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
+  //         },
+  //         lsm_policies: {
+  //           file: [
+  //             {
+  //               flags: [],
+  //               uid: [],
+  //               path: "/path/to/file",
+  //             },
+  //           ],
+  //           network: [
+  //             {
+  //               flags: [],
+  //               uid: [],
+  //               ip: "0.0.0.0",
+  //               port: 22,
+  //               protocol: 1, // tcp 예시
+  //             },
+  //           ],
+  //           process: [
+  //             {
+  //               flags: [],
+  //               uid: [],
+  //               comm: "example-process",
+  //             },
+  //           ],
+  //         },
+  //       },
+  //     ],
+  //   },
+  //   null,
+  //   2
+  // )
 
   const renderPolicyYaml = (): string => {
     const policyName = window.prompt("policy name?")
@@ -184,7 +184,8 @@ export function PolicyContent({
     setIsLoading(true);
 
     console.log("API loading...")
-    const policyData = isPredefined ? JSON.parse(predefinedPolicy):JSON.parse(finalPolicy);
+    const policyData = isPredefined ? JSON.parse(selectedPredefinedPolicy):JSON.parse(finalPolicy);
+    console.log(policyData)
     axios.post(`${BASE_URL}/policy/custom`,policyData, {headers: {
       "Content-Type": "application/json",
     },}).then((res)=>{console.log(res);
@@ -445,7 +446,7 @@ export function PolicyContent({
   );
 
   const renderPredefinedPolicies = () => (
-    
+
     <>
       {renderBackButton(() => setCreatePolicyOption(""))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">Predefined Policies</h1>
@@ -457,7 +458,51 @@ export function PolicyContent({
             </CardHeader>
             <CardContent>
               <Button
-                onClick={() => setSelectedPredefinedPolicy(policy)}
+                onClick={() => setSelectedPredefinedPolicy(
+                  JSON.stringify(
+                    //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
+                    {
+                      api_version: "v1",
+                      name: `${policy} for ${selectedContainer.name}`,
+                      containers: [
+                        {
+                          container_name: selectedContainer?.name || "",
+                          raw_tp: "true",
+                          tracepoint_policy: {
+                            tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
+                          },
+                          lsm_policies: {
+                            file: [
+                              {
+                                flags: [],
+                                uid: [],
+                                path: "/path/to/file",
+                              },
+                            ],
+                            network: [
+                              {
+                                flags: [],
+                                uid: [],
+                                ip: "0.0.0.0",
+                                port: 22,
+                                protocol: 1, // tcp 예시
+                              },
+                            ],
+                            process: [
+                              {
+                                flags: [],
+                                uid: [],
+                                comm: "example-process",
+                              },
+                            ],
+                          },
+                        },
+                      ],
+                    },
+                    null,
+                    2
+                  )
+                )}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 View Policy
@@ -468,12 +513,9 @@ export function PolicyContent({
       </div>
       {selectedPredefinedPolicy && (
         <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>{selectedPredefinedPolicy}</CardTitle>
-          </CardHeader>
           <CardContent>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-              {predefinedPolicy}
+              {selectedPredefinedPolicy}
             </pre>
             <Button
               onClick={()=>handleApplyPolicy(true)}
