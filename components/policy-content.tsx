@@ -21,7 +21,7 @@ import {
   ContainerType,
   SERVER_NUMBER,
 } from "./container-policy-manager";
-import { logLevel, Policy, FilePolicyFlags, NetworkPolicyFlags, ProcessPolicyFlags, PolicyOptionType, CreatePolicyOptionType, NetworkArgument, CustomPolicyStepType, webServerRulesPolicy, blockRootUserPolicy, blockContainerEscapePolicy } from "./data/Mock";
+import { logLevel, Policy, SendPolicy, FilePolicyFlags, NetworkPolicyFlags, ProcessPolicyFlags, PolicyOptionType, CreatePolicyOptionType, NetworkArgument, CustomPolicyStepType, webServerRulesPolicy, blockRootUserPolicy, blockContainerEscapePolicy } from "./data/Mock";
 import yaml from 'js-yaml';
 
 
@@ -34,8 +34,8 @@ export const PolicyContent = ({
 }) => {
   const [selectedContainer, setSelectedContainer] = useState<ContainerType>();
   const [loggingOption, setLoggingOption] = useState<logLevel>("medium");
-  const [selectedPredefinedPolicy, setSelectedPredefinedPolicy] = useState<Policy>();
-  const [finalPolicy, setFinalPolicy] = useState<Policy>();
+  const [selectedPredefinedPolicy, setSelectedPredefinedPolicy] = useState<SendPolicy>();
+  const [finalPolicy, setFinalPolicy] = useState<SendPolicy>();
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -45,9 +45,9 @@ export const PolicyContent = ({
   const [selectedArgument, setSelectedArgument] = useState("");
   const [customPolicyStep, setCustomPolicyStep] = useState<CustomPolicyStepType>(0);
   const [networkInputs, setNetworkInputs] = useState<NetworkArgument>({
-    ip:"127.0.0.1",
-    port:22,
-    protocol:"tcp"
+    ip: "127.0.0.1",
+    port: 22,
+    protocol: 0
   });
   const [sudoUid, setSudoUid] = useState<number>();
 
@@ -56,57 +56,54 @@ export const PolicyContent = ({
     selectedActions: string[],
     selectedArgument: string,
     networkInputs: NetworkArgument
-  ): string => {
+  ): SendPolicy => {
     const policyName = window.prompt("Policy name?");
-    const policy: Policy = {
+    const policy: SendPolicy = {
       api_version: "v1",
       name: policyName || "",
-      policy: {
-        container_name: selectedContainer?.name || "",
-        raw_tp: "on", // "on" | "off" 타입 명시
-        tracepoint_policy: {
-          tracepoints: selectedActions.filter((action) => action.includes("tracepoint")),
+      containers: [
+        {
+          container_name: selectedContainer?.name || "",
+          raw_tp: "on", // "on" | "off" 타입 명시
+          tracepoint_policy: {
+            tracepoints: selectedActions.filter((action) => action.includes("tracepoint")),
+          },
+          lsm_policies: {
+            file: selectedActions
+              .filter((action) => action.includes("file"))
+              .map(() => ({
+                flags: [] as FilePolicyFlags[],
+                uid: [] as number[],
+                path: selectedArgument || "",
+              })),
+            network: selectedActions
+              .filter((action) => action.includes("network"))
+              .map(() => ({
+                flags: [] as NetworkPolicyFlags[],
+                uid: [] as number[],
+                ip: networkInputs.ip || "",
+                port: Number(networkInputs.port) || 0,
+                protocol: networkInputs.protocol || 0
+              })),
+            process: selectedActions
+              .filter((action) => action.includes("process"))
+              .map(() => ({
+                flags: [] as ProcessPolicyFlags[],
+                uid: [] as number[],
+                comm: selectedArgument || "",
+              })),
+          },
         },
-        lsm_policies: {
-          file: selectedActions
-            .filter((action) => action.includes("file"))
-            .map(() => ({
-              flags: [] as FilePolicyFlags[],
-              uid: [] as number[],
-              path: selectedArgument || "",
-            })),
-          network: selectedActions
-            .filter((action) => action.includes("network"))
-            .map(() => ({
-              flags: [] as NetworkPolicyFlags[],
-              uid: [] as number[],
-              ip: networkInputs.ip || "",
-              port: Number(networkInputs.port) || 0,
-              protocol:
-                networkInputs.protocol === "tcp"
-                  ? "tcp"
-                  : networkInputs.protocol === "udp"
-                  ? "udp"
-                  : 0, // Ensure protocol is compatible with type
-            })),
-          process: selectedActions
-            .filter((action) => action.includes("process"))
-            .map(() => ({
-              flags: [] as ProcessPolicyFlags[],
-              uid: [] as number[],
-              comm: selectedArgument || "",
-            })),
-        },
-      },
+      ],
     };
-    return JSON.stringify(policy, null, 2);
+    return policy
   };
-  
+
 
   useEffect(() => {
     if (customPolicyStep === 2) {
-      const policyYaml = renderPolicyYaml(selectedContainer,selectedActions,selectedArgument,networkInputs);
-      setFinalPolicy(JSON.parse(policyYaml));
+      const policyYaml: SendPolicy = renderPolicyYaml(selectedContainer, selectedActions, selectedArgument, networkInputs);
+      setFinalPolicy((policyYaml));
     }
   }, [customPolicyStep]);
 
@@ -121,6 +118,7 @@ export const PolicyContent = ({
           console.log(res.data);
         })
         .catch((err) => console.log(err));
+    //이거 보내고 나서도 새로 받아와야됨, 그리고 보내고 나서 리다이렉팅도 해결해야됨
   }, [selectedContainer]);
 
   const toggleAction = (action: string) => {
@@ -136,7 +134,7 @@ export const PolicyContent = ({
     setIsLoading(true);
 
     console.log("API loading...")
-    const policyData = isPredefined ? JSON.stringify(selectedPredefinedPolicy) : JSON.stringify(finalPolicy);
+    const policyData: SendPolicy = isPredefined ? (selectedPredefinedPolicy) : (finalPolicy);
     console.log(policyData)
     axios.post(`${BASE_URL}/policy/custom`, policyData, {
       headers: {
@@ -200,7 +198,7 @@ export const PolicyContent = ({
   );
 
 
-  
+
   const renderCheckPolicy = () => (
     <>
       {renderBackButton(() => setPolicyOption(""))}
@@ -262,12 +260,12 @@ export const PolicyContent = ({
       </Card>
     </>
   );
-  
-  
 
-  
-  
-  
+
+
+
+
+
 
   const renderLoggingOption = () => (
     <>
@@ -400,7 +398,7 @@ export const PolicyContent = ({
         <Card className="mt-6">
           <CardContent>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-            {yaml.dump(selectedPredefinedPolicy)} 
+              {yaml.dump(selectedPredefinedPolicy)}
               {/* {JSON.stringify(selectedPredefinedPolicy,null,2)} */}
             </pre>
             <Button
@@ -570,9 +568,15 @@ export const PolicyContent = ({
             <div>
               <Label htmlFor="protocol">Protocol</Label>
               <Select
-                value={networkInputs && String(networkInputs.protocol)}
+                value={
+                  networkInputs.protocol === 6
+                    ? "tcp"
+                    : networkInputs.protocol === 17
+                      ? "udp"
+                      : ""
+                }
                 onValueChange={(value) => {
-                  const newProtocol = value === "udp" || value === "tcp" ? value : Number(value);
+                  const newProtocol = value === "tcp" ? 6 : value === "udp" ? 17 : 0;
                   setNetworkInputs({ ...networkInputs, protocol: newProtocol });
                 }}
               >
@@ -629,7 +633,7 @@ export const PolicyContent = ({
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Final Policy</h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-          {yaml.dump(finalPolicy)} 
+            {yaml.dump(finalPolicy)}
             {/* {JSON.stringify(finalPolicy,null,2)} */}
           </pre>
           <Button

@@ -63,6 +63,12 @@ export interface Policy {
   policy: ContainerPolicy;
 }
 
+export interface SendPolicy {
+  api_version :string;
+  name: string;
+  containers: ContainerPolicy[];
+}
+
 export interface ContainerPolicy {
   container_name: string;
   raw_tp: "on" | "off";
@@ -97,7 +103,8 @@ export type FilePolicyFlags =
 export interface NetworkArgument {
   ip: string;
   port: number;
-  protocol: number | "tcp" | "udp";
+  protocol: 17|6|0
+  //udp,tcp,zero 
 }
 
 export interface NetworkPolicy extends NetworkArgument {
@@ -128,125 +135,132 @@ export type PolicyOptionType = "" | "check" | "logging" | "create";
 export type CreatePolicyOptionType = "" | "predefined" | "custom";
 export type CustomPolicyStepType = 0 | 1 | 2;
 
-export const webServerRulesPolicy = (selectedContainer: ContainerType): Policy => ({
+export const webServerRulesPolicy = (selectedContainer: ContainerType): SendPolicy => ({
   api_version: "v1",
   name: `Web Server Rules for ${selectedContainer.name}`,
-  policy: {
-    container_name: selectedContainer?.name || "",
-    raw_tp: "on",
-    tracepoint_policy: {
-      tracepoints: ["__NR_accept", "__NR_recvfrom"],
+  containers: [
+    {
+      container_name: selectedContainer?.name || "",
+      raw_tp: "on",
+      tracepoint_policy: {
+        tracepoints: ["__NR_accept", "__NR_recvfrom"],
+      },
+      lsm_policies: {
+        file: [
+          {
+            path: "/var/www",
+            flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_FILE_READ"],
+            uid: [1000, 1001],
+          },
+          {
+            path: "/var/log",
+            flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_FILE_APPEND"],
+            uid: [1000],
+          },
+        ],
+        network: [
+          {
+            ip: "0.0.0.0",
+            port: 80,
+            protocol: 6, // TCP
+            flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_NET_CONNECT"],
+            uid: [1000],
+          },
+          {
+            ip: "0.0.0.0",
+            port: 443,
+            protocol: 6, // TCP
+            flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_NET_CONNECT"],
+            uid: [1001],
+          },
+        ],
+        process: [
+          {
+            comm: "nginx",
+            flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_PROC_EXEC"],
+            uid: [1000],
+          },
+        ],
+      },
     },
-    lsm_policies: {
-      file: [
-        {
-          path: "/var/www",
-          flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_FILE_READ"],
-          uid: [1000, 1001],
-        },
-        {
-          path: "/var/log",
-          flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_FILE_APPEND"],
-          uid: [1000],
-        },
-      ],
-      network: [
-        {
-          ip: "0.0.0.0",
-          port: 80,
-          protocol: 6, // TCP
-          flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_NET_CONNECT"],
-          uid: [1000],
-        },
-        {
-          ip: "0.0.0.0",
-          port: 443,
-          protocol: 6, // TCP
-          flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_NET_CONNECT"],
-          uid: [1001],
-        },
-      ],
-      process: [
-        {
-          comm: "nginx",
-          flags: ["POLICY_ALLOW", "POLICY_AUDIT", "POLICY_PROC_EXEC"],
-          uid: [1000],
-        },
-      ],
-    },
-  },
+  ],
 });
 
-export const blockRootUserPolicy = (selectedContainer: ContainerType): Policy => ({
+export const blockRootUserPolicy = (selectedContainer: ContainerType): SendPolicy => ({
   api_version: "v1",
   name: `Block Root User for ${selectedContainer.name}`,
-  policy: {
-    container_name: selectedContainer?.name || "",
-    raw_tp: "on",
-    tracepoint_policy: {
-      tracepoints: ["__NR_setuid", "__NR_setgid"],
+  containers: [
+    {
+      container_name: selectedContainer?.name || "",
+      raw_tp: "on",
+      tracepoint_policy: {
+        tracepoints: ["__NR_setuid", "__NR_setgid"],
+      },
+      lsm_policies: {
+        file: [
+          {
+            path: "/root",
+            flags: ["POLICY_AUDIT", "POLICY_FILE_READ"],
+            uid: [0],
+          },
+        ],
+        network: [
+          {
+            ip: "0.0.0.0",
+            port: 22,
+            protocol: 6, // TCP
+            flags: ["POLICY_AUDIT", "POLICY_NET_CONNECT"],
+            uid: [0],
+          },
+        ],
+        process: [
+          {
+            comm: "bash",
+            flags: ["POLICY_AUDIT", "POLICY_PROC_EXEC"],
+            uid: [0],
+          },
+        ],
+      },
     },
-    lsm_policies: {
-      file: [
-        {
-          path: "/root",
-          flags: ["POLICY_AUDIT", "POLICY_FILE_READ"],
-          uid: [0],
-        },
-      ],
-      network: [
-        {
-          ip: "0.0.0.0",
-          port: 22,
-          protocol: 6, // TCP
-          flags: ["POLICY_AUDIT", "POLICY_NET_CONNECT"],
-          uid: [0],
-        },
-      ],
-      process: [
-        {
-          comm: "bash",
-          flags: ["POLICY_AUDIT", "POLICY_PROC_EXEC"],
-          uid: [0],
-        },
-      ],
-    },
-  },
+  ],
 });
 
-export const blockContainerEscapePolicy = (selectedContainer: ContainerType): Policy => ({
+export const blockContainerEscapePolicy = (selectedContainer: ContainerType): SendPolicy => ({
   api_version: "v1",
   name: `Block Container Escape for ${selectedContainer.name}`,
-  policy: {
-    container_name: selectedContainer?.name || "",
-    raw_tp: "on",
-    tracepoint_policy: {
-      tracepoints: ["__NR_clone", "__NR_unshare"],
+  containers: [
+    {
+      container_name: selectedContainer?.name || "",
+      raw_tp: "on",
+      tracepoint_policy: {
+        tracepoints: ["__NR_clone", "__NR_unshare"],
+      },
+      lsm_policies: {
+        file: [
+          {
+            path: "/proc",
+            flags: ["POLICY_AUDIT", "POLICY_FILE_READ"],
+            uid: [1000],
+          },
+        ],
+        network: [
+          {
+            ip: "10.0.0.0/8",
+            port: 0,
+            protocol: 0, // Any
+            flags: ["POLICY_DENY", "POLICY_AUDIT"],
+            uid: [1000, 1001],
+          },
+        ],
+        process: [
+          {
+            comm: "docker",
+            flags: ["POLICY_AUDIT", "POLICY_PROC_EXEC"],
+            uid: [1000],
+          },
+        ],
+      },
     },
-    lsm_policies: {
-      file: [
-        {
-          path: "/proc",
-          flags: ["POLICY_AUDIT", "POLICY_FILE_READ"],
-          uid: [1000],
-        },
-      ],
-      network: [
-        {
-          ip: "10.0.0.0/8",
-          port: 0,
-          protocol: 0, // Any
-          flags: ["POLICY_DENY", "POLICY_AUDIT"],
-          uid: [1000, 1001],
-        },
-      ],
-      process: [
-        {
-          comm: "docker",
-          flags: ["POLICY_AUDIT", "POLICY_PROC_EXEC"],
-          uid: [1000],
-        },
-      ],
-    },
-  },
+  ],
 });
+
