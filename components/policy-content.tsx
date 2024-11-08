@@ -627,7 +627,7 @@ export const PolicyContent = ({
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Final Policy</h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-            {JSON.stringify(finalPolicy)}
+            {JSON.stringify(finalPolicy,null,2)}
           </pre>
           <Button
             onClick={() => handleApplyPolicy()}
