@@ -21,13 +21,8 @@ import {
   ContainerType,
   SERVER_NUMBER,
 } from "./container-policy-manager";
+import { logLevel, Policy, FilePolicyFlags, NetworkPolicyFlags, ProcessPolicyFlags, PolicyOptionType, CreatePolicyOptionType, NetworkArgument, CustomPolicyStepType, webServerRulesPolicy, blockRootUserPolicy, blockContainerEscapePolicy } from "./data/Mock";
 
-export interface containerPropsType {
-  name: string;
-  id: number;
-}
-
-//여기부터 리팩터링 다시
 
 export const PolicyContent = ({
   onRedirect,
@@ -36,80 +31,81 @@ export const PolicyContent = ({
   onRedirect: (page: string, container: string) => void;
   containerList: ContainerType[];
 }) => {
-  const [selectedContainer, setSelectedContainer] =
-    useState<containerPropsType>();
-  const [policyOption, setPolicyOption] = useState("");
-  const [loggingOption, setLoggingOption] = useState("medium");
-  const [createPolicyOption, setCreatePolicyOption] = useState("");
-  const [selectedPredefinedPolicy, setSelectedPredefinedPolicy] = useState("");
-  const [selectedArgument, setSelectedArgument] = useState("");
-  const [customPolicyStep, setCustomPolicyStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [finalPolicy, setFinalPolicy] = useState("");
+  const [selectedContainer, setSelectedContainer] = useState<ContainerType>();
+  const [loggingOption, setLoggingOption] = useState<logLevel>("medium");
+  const [selectedPredefinedPolicy, setSelectedPredefinedPolicy] = useState<Policy>();
+  const [finalPolicy, setFinalPolicy] = useState<Policy>();
   const [selectedActions, setSelectedActions] = useState<string[]>([]);
-  const [networkInputs, setNetworkInputs] = useState({
-    ip: "",
-    port: "",
-    protocol: "tcp",
-  });
-  const [sudoUid, setSudoUid] = useState("");
-  const [policies, setPolicies] = useState([]);
+  const [policies, setPolicies] = useState<Policy[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [policyOption, setPolicyOption] = useState<PolicyOptionType>("");
+  const [createPolicyOption, setCreatePolicyOption] = useState<CreatePolicyOptionType>("");
 
-  const renderPolicyYaml = (): string => {
-    const policyName = window.prompt("policy name?")
-    const policy = {
+  const [selectedArgument, setSelectedArgument] = useState("");
+  const [customPolicyStep, setCustomPolicyStep] = useState<CustomPolicyStepType>(0);
+  const [networkInputs, setNetworkInputs] = useState<NetworkArgument>({
+    ip:"127.0.0.1",
+    port:22,
+    protocol:"tcp"
+  });
+  const [sudoUid, setSudoUid] = useState<number>();
+
+  const renderPolicyYaml = (
+    selectedContainer: ContainerType,
+    selectedActions: string[],
+    selectedArgument: string,
+    networkInputs: NetworkArgument
+  ): string => {
+    const policyName = window.prompt("Policy name?");
+    const policy: Policy = {
       api_version: "v1",
-      name: policyName,
-      containers: [
-        {
-          container_name: selectedContainer?.name || "",
-          raw_tp: "true", 
-          tracepoint_policy: {
-            tracepoints: selectedActions.filter((action) =>
-              action.includes("tracepoint")
-            ),
-          },
-          lsm_policies: {
-            file: selectedActions
-              .filter((action) => action.includes("file"))
-              .map(() => ({
-                flags: [], 
-                uid: [], 
-                path: selectedArgument || "", 
-              })),
-            network: selectedActions
-              .filter((action) => action.includes("network"))
-              .map(() => ({
-                flags: [], 
-                uid: [], 
-                ip: networkInputs.ip || "",
-                port: Number(networkInputs.port) || 0,
-                protocol:
-                  networkInputs.protocol === "tcp"
-                    ? 1
-                    : networkInputs.protocol === "udp"
-                    ? 2
-                    : 0, // 예시: tcp=1, udp=2
-              })),
-            process: selectedActions
-              .filter((action) => action.includes("process"))
-              .map(() => ({
-                flags: [], 
-                uid: [], 
-                comm: selectedArgument || "", 
-              })),
-          },
+      name: policyName || "",
+      policy: {
+        container_name: selectedContainer?.name || "",
+        raw_tp: "on", // "on" | "off" 타입 명시
+        tracepoint_policy: {
+          tracepoints: selectedActions.filter((action) => action.includes("tracepoint")),
         },
-      ],
+        lsm_policies: {
+          file: selectedActions
+            .filter((action) => action.includes("file"))
+            .map(() => ({
+              flags: [] as FilePolicyFlags[],
+              uid: [] as number[],
+              path: selectedArgument || "",
+            })),
+          network: selectedActions
+            .filter((action) => action.includes("network"))
+            .map(() => ({
+              flags: [] as NetworkPolicyFlags[],
+              uid: [] as number[],
+              ip: networkInputs.ip || "",
+              port: Number(networkInputs.port) || 0,
+              protocol:
+                networkInputs.protocol === "tcp"
+                  ? "tcp"
+                  : networkInputs.protocol === "udp"
+                  ? "udp"
+                  : 0, // Ensure protocol is compatible with type
+            })),
+          process: selectedActions
+            .filter((action) => action.includes("process"))
+            .map(() => ({
+              flags: [] as ProcessPolicyFlags[],
+              uid: [] as number[],
+              comm: selectedArgument || "",
+            })),
+        },
+      },
     };
-  
-    return JSON.stringify(policy, null, 2); 
+    return JSON.stringify(policy, null, 2);
   };
+  
 
   useEffect(() => {
     if (customPolicyStep === 2) {
-      const policyYaml = renderPolicyYaml();
-      setFinalPolicy(policyYaml);
+      const policyYaml = renderPolicyYaml(selectedContainer,selectedActions,selectedArgument,networkInputs);
+      setFinalPolicy(JSON.parse(policyYaml));
     }
   }, [customPolicyStep]);
 
@@ -134,25 +130,42 @@ export const PolicyContent = ({
     );
   };
 
-  const handleApplyPolicy = (isPredefined?:boolean) => {
+  const handleApplyPolicy = (isPredefined?: boolean) => {
     // predefined냐에 따라서, 여기서 정책 파일을 받아서 바로 서버에 넘기는 형식으로 변경해야 됨
     setIsLoading(true);
 
     console.log("API loading...")
-    const policyData = isPredefined ? JSON.parse(selectedPredefinedPolicy):JSON.parse(finalPolicy);
+    const policyData = isPredefined ? JSON.stringify(selectedPredefinedPolicy) : JSON.stringify(finalPolicy);
     console.log(policyData)
-    axios.post(`${BASE_URL}/policy/custom`,policyData, {headers: {
-      "Content-Type": "application/json",
-    },}).then((res)=>{console.log(res);
-        setIsLoading(false);
-        onRedirect("containers", selectedContainer.name);
-    }).catch((err)=>console.log(err))
+    axios.post(`${BASE_URL}/policy/custom`, policyData, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => {
+      console.log(res);
+      setIsLoading(false);
+      onRedirect("containers", selectedContainer.name);
+    }).catch((err) => console.log(err))
   };
 
   const renderBackButton = (onClick: () => void) => (
     <Button variant="outline" className="mb-4" onClick={onClick}>
       <ArrowLeft className="mr-2 h-4 w-4" /> Back
     </Button>
+  );
+
+  const CardSelectButton = ({ title, description, onClick, buttonText, isButton }: { title: string, description?: string, onClick: () => void, buttonText?: string, isButton?: boolean }) => (
+    <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={onClick}>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p>{description}</p>
+        {isButton && (<Button onClick={onClick} className="bg-blue-500 hover:bg-blue-600 text-white mt-4">
+          {buttonText}
+        </Button>)}
+      </CardContent>
+    </Card>
   );
 
   const renderContainerList = () => (
@@ -163,31 +176,13 @@ export const PolicyContent = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {containerList &&
           containerList.map((container) => (
-            <Card
-              key={container.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <CardHeader>
-                <CardTitle>{container.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() =>
-                    setSelectedContainer({
-                      name: container.name,
-                      id: container.id,
-                    })
-                  }
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  Select
-                </Button>
-              </CardContent>
-            </Card>
+            <CardSelectButton key={container.id} title={container.name} onClick={() => setSelectedContainer(container)} buttonText="Select" isButton />
           ))}
       </div>
     </>
   );
+
+
 
   const renderPolicyOptions = () => (
     <>
@@ -196,43 +191,15 @@ export const PolicyContent = ({
         Policy Options for {selectedContainer.name}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setPolicyOption("check")}
-        >
-          <CardHeader>
-            <CardTitle>Check Policy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>View applied policies</p>
-          </CardContent>
-        </Card>
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setPolicyOption("logging")}
-        >
-          <CardHeader>
-            <CardTitle>Check Logging Option</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>View and change logging settings</p>
-          </CardContent>
-        </Card>
-        <Card
-          className="cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setPolicyOption("create")}
-        >
-          <CardHeader>
-            <CardTitle>Create Policy</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>Create new policies</p>
-          </CardContent>
-        </Card>
+        <CardSelectButton title="Check Policy" description="View applied policies" onClick={() => setPolicyOption("check")} />
+        <CardSelectButton title="Check Logging Option" description="View and change logging settings" onClick={() => setPolicyOption("logging")} />
+        <CardSelectButton title="Create Policy" description="Create new policies" onClick={() => setPolicyOption("create")} />
       </div>
     </>
   );
 
+
+  
   const renderCheckPolicy = () => (
     <>
       {renderBackButton(() => setPolicyOption(""))}
@@ -246,50 +213,46 @@ export const PolicyContent = ({
         <CardContent>
           <ul className="list-disc list-inside">
             {policies &&
-              policies.map((policy, index) => (
-                <li key={index} className="mb-6">
-                  <pre className="bg-gray-50 p-4 rounded-lg shadow-md text-sm whitespace-pre-wrap">
-                    api_version: {policy.api_version}
-                    {"\n"}name: {policy.name}
-                    {"\n"}policy:
-                    <div className="ml-4">
-                      container_name: {policy.policy.container_name}
-                      {"\n"}lsm_policies:
-                      <div className="ml-4">
-                        file:
-                        {policy.policy.lsm_policies.file.map(
-                          (filePolicy, fileIndex) => (
-                            <div key={fileIndex} className="ml-6">
-                              - path: {filePolicy.path}
-                              {"\n"} flags: [{filePolicy.flags.join(", ")}]
-                              {"\n"} uid: [{filePolicy.uid.join(", ")}]
-                            </div>
-                          )
-                        )}
-                        {"\n"}network:
-                        {policy.policy.lsm_policies.network.map(
-                          (netPolicy, netIndex) => (
-                            <div key={netIndex} className="ml-6">
-                              - ip: {netPolicy.ip}
-                              {"\n"} port: {netPolicy.port}
-                              {"\n"} protocol: {netPolicy.protocol}
-                              {"\n"} flags: [{netPolicy.flags.join(", ")}]{"\n"}{" "}
-                              uid: [{netPolicy.uid.join(", ")}]
-                            </div>
-                          )
-                        )}
-                        {"\n"}process:
-                        {policy.policy.lsm_policies.process.map(
-                          (procPolicy, procIndex) => (
-                            <div key={procIndex} className="ml-6">
-                              - comm: {procPolicy.comm}
-                              {"\n"} flags: [{procPolicy.flags.join(", ")}]
-                              {"\n"} uid: [{procPolicy.uid.join(", ")}]
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
+              policies.map((policy, policyIndex) => (
+                <li key={policyIndex} className="mb-6">
+                  <pre className="bg-gray-50 p-4 rounded-lg shadow-md text-sm whitespace-pre-wrap overflow-x-auto max-h-96">
+                    {`api_version: ${policy.api_version}
+  name: ${policy.name}
+  policy:
+    container_name: ${policy.policy.container_name}
+    raw_tp: ${policy.policy.raw_tp}
+    tracepoint_policy:
+      tracepoints:
+  ${policy.policy.tracepoint_policy.tracepoints
+                        .map((tp) => `      - ${tp}`)
+                        .join("\n")}
+    lsm_policies:
+      file:
+  ${policy.policy.lsm_policies.file
+                        .map(
+                          (filePolicy) => `      - path: ${filePolicy.path}
+          flags: [${filePolicy.flags.join(", ")}]
+          uid: [${filePolicy.uid.join(", ")}]`
+                        )
+                        .join("\n")}
+      network:
+  ${policy.policy.lsm_policies.network
+                        .map(
+                          (netPolicy) => `      - ip: ${netPolicy.ip}
+          port: ${netPolicy.port}
+          protocol: ${netPolicy.protocol}
+          flags: [${netPolicy.flags.join(", ")}]
+          uid: [${netPolicy.uid.join(", ")}]`
+                        )
+                        .join("\n")}
+      process:
+  ${policy.policy.lsm_policies.process
+                        .map(
+                          (procPolicy) => `      - comm: ${procPolicy.comm}
+          flags: [${procPolicy.flags.join(", ")}]
+          uid: [${procPolicy.uid.join(", ")}]`
+                        )
+                        .join("\n")}`}
                   </pre>
                 </li>
               ))}
@@ -298,6 +261,12 @@ export const PolicyContent = ({
       </Card>
     </>
   );
+  
+  
+
+  
+  
+  
 
   const renderLoggingOption = () => (
     <>
@@ -315,9 +284,8 @@ export const PolicyContent = ({
         <CardContent>
           <div className="space-y-4">
             <div
-              className={`p-4 rounded-md ${
-                loggingOption === "high" ? "bg-red-100" : "bg-gray-100"
-              }`}
+              className={`p-4 rounded-md ${loggingOption === "high" ? "bg-red-100" : "bg-gray-100"
+                }`}
             >
               <h3 className="font-semibold">High</h3>
               <p>
@@ -326,17 +294,15 @@ export const PolicyContent = ({
               </p>
             </div>
             <div
-              className={`p-4 rounded-md ${
-                loggingOption === "medium" ? "bg-yellow-100" : "bg-gray-100"
-              }`}
+              className={`p-4 rounded-md ${loggingOption === "medium" ? "bg-yellow-100" : "bg-gray-100"
+                }`}
             >
               <h3 className="font-semibold">Medium</h3>
               <p>Logs only important system calls and policy violation logs.</p>
             </div>
             <div
-              className={`p-4 rounded-md ${
-                loggingOption === "low" ? "bg-green-100" : "bg-gray-100"
-              }`}
+              className={`p-4 rounded-md ${loggingOption === "low" ? "bg-green-100" : "bg-gray-100"
+                }`}
             >
               <h3 className="font-semibold">Low</h3>
               <p>Logs only policy violation logs.</p>
@@ -401,7 +367,6 @@ export const PolicyContent = ({
   );
 
   const renderPredefinedPolicies = () => (
-
     <>
       {renderBackButton(() => setCreatePolicyOption(""))}
       <h1 className="text-3xl font-bold mb-6 text-blue-700">Predefined Policies</h1>
@@ -413,51 +378,15 @@ export const PolicyContent = ({
             </CardHeader>
             <CardContent>
               <Button
-                onClick={() => setSelectedPredefinedPolicy(
-                  JSON.stringify(
-                    //이거 나중에 헤더파일로 빼던지 아니면 서버에서 받던지
-                    {
-                      api_version: "v1",
-                      name: `${policy} for ${selectedContainer.name}`,
-                      containers: [
-                        {
-                          container_name: selectedContainer?.name || "",
-                          raw_tp: "true",
-                          tracepoint_policy: {
-                            tracepoints: ["tracepoint1", "tracepoint2"], // 예시 데이터
-                          },
-                          lsm_policies: {
-                            file: [
-                              {
-                                flags: [],
-                                uid: [],
-                                path: "/path/to/file",
-                              },
-                            ],
-                            network: [
-                              {
-                                flags: [],
-                                uid: [],
-                                ip: "0.0.0.0",
-                                port: 22,
-                                protocol: 1, // tcp 예시
-                              },
-                            ],
-                            process: [
-                              {
-                                flags: [],
-                                uid: [],
-                                comm: "example-process",
-                              },
-                            ],
-                          },
-                        },
-                      ],
-                    },
-                    null,
-                    2
-                  )
-                )}
+                onClick={() => {
+                  if (policy === "Web Server Rules") {
+                    setSelectedPredefinedPolicy((webServerRulesPolicy(selectedContainer)));
+                  } else if (policy === "Block Root User") {
+                    setSelectedPredefinedPolicy((blockRootUserPolicy(selectedContainer)));
+                  } else if (policy === "Block Container Escape") {
+                    setSelectedPredefinedPolicy((blockContainerEscapePolicy(selectedContainer)));
+                  }
+                }}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
               >
                 View Policy
@@ -470,10 +399,10 @@ export const PolicyContent = ({
         <Card className="mt-6">
           <CardContent>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-              {selectedPredefinedPolicy}
+              {JSON.stringify(selectedPredefinedPolicy,null,2)}
             </pre>
             <Button
-              onClick={()=>handleApplyPolicy(true)}
+              onClick={() => handleApplyPolicy(true)}
               className="mt-4 bg-green-500 hover:bg-green-600 text-white"
             >
               Apply Policy
@@ -498,11 +427,10 @@ export const PolicyContent = ({
               (action) => (
                 <Card
                   key={action}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedActions.includes(action)
-                      ? "bg-blue-100 border-blue-500"
-                      : "bg-white"
-                  }`}
+                  className={`cursor-pointer transition-all duration-200 ${selectedActions.includes(action)
+                    ? "bg-blue-100 border-blue-500"
+                    : "bg-white"
+                    }`}
                 >
                   <CardHeader className="p-4">
                     <div className="flex items-center space-x-2">
@@ -536,11 +464,10 @@ export const PolicyContent = ({
             ].map((action) => (
               <Card
                 key={action}
-                className={`cursor-pointer transition-all duration-200 ${
-                  selectedActions.includes(action)
-                    ? "bg-blue-100 border-blue-500"
-                    : "bg-white"
-                }`}
+                className={`cursor-pointer transition-all duration-200 ${selectedActions.includes(action)
+                  ? "bg-blue-100 border-blue-500"
+                  : "bg-white"
+                  }`}
               >
                 <CardHeader className="p-4">
                   <div className="flex items-center space-x-2">
@@ -569,11 +496,10 @@ export const PolicyContent = ({
               (action) => (
                 <Card
                   key={action}
-                  className={`cursor-pointer transition-all duration-200 ${
-                    selectedActions.includes(action)
-                      ? "bg-blue-100 border-blue-500"
-                      : "bg-white"
-                  }`}
+                  className={`cursor-pointer transition-all duration-200 ${selectedActions.includes(action)
+                    ? "bg-blue-100 border-blue-500"
+                    : "bg-white"
+                    }`}
                 >
                   <CardHeader className="p-4">
                     <div className="flex items-center space-x-2">
@@ -622,7 +548,7 @@ export const PolicyContent = ({
               <Input
                 id="ip"
                 placeholder="Enter IP address"
-                value={networkInputs.ip}
+                value={networkInputs && networkInputs.ip}
                 onChange={(e) =>
                   setNetworkInputs({ ...networkInputs, ip: e.target.value })
                 }
@@ -633,19 +559,20 @@ export const PolicyContent = ({
               <Input
                 id="port"
                 placeholder="Enter port number"
-                value={networkInputs.port}
+                value={networkInputs && networkInputs.port}
                 onChange={(e) =>
-                  setNetworkInputs({ ...networkInputs, port: e.target.value })
+                  setNetworkInputs({ ...networkInputs, port: Number(e.target.value) })
                 }
               />
             </div>
             <div>
               <Label htmlFor="protocol">Protocol</Label>
               <Select
-                value={networkInputs.protocol}
-                onValueChange={(value) =>
-                  setNetworkInputs({ ...networkInputs, protocol: value })
-                }
+                value={networkInputs && String(networkInputs.protocol)}
+                onValueChange={(value) => {
+                  const newProtocol = value === "udp" || value === "tcp" ? value : Number(value);
+                  setNetworkInputs({ ...networkInputs, protocol: newProtocol });
+                }}
               >
                 <SelectTrigger id="protocol">
                   <SelectValue placeholder="Select protocol" />
@@ -677,7 +604,7 @@ export const PolicyContent = ({
               id="uid"
               placeholder="Enter UID"
               value={sudoUid}
-              onChange={(e) => setSudoUid(e.target.value)}
+              onChange={(e) => setSudoUid(Number(e.target.value))}
             />
           </div>
         )}
@@ -696,18 +623,14 @@ export const PolicyContent = ({
     );
 
     const renderFinalPolicy = () => {
-      //const policyYaml = renderPolicyYaml();
-
-      // setFinalPolicy(policyYaml);
-      console.log(finalPolicy)
       return (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Final Policy</h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-            {finalPolicy}
+            {JSON.stringify(finalPolicy)}
           </pre>
           <Button
-            onClick={()=>handleApplyPolicy()}
+            onClick={() => handleApplyPolicy()}
             className="bg-green-500 hover:bg-green-600 text-white"
           >
             Apply Policy
@@ -720,7 +643,7 @@ export const PolicyContent = ({
       <>
         {renderBackButton(() => {
           if (customPolicyStep > 0) {
-            setCustomPolicyStep(customPolicyStep - 1);
+            setCustomPolicyStep(Math.max(0, customPolicyStep - 1) as CustomPolicyStepType);
             if (customPolicyStep === 1) {
               setSelectedActions([]);
             }

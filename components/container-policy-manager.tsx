@@ -9,8 +9,8 @@ import { PolicyContent } from "./policy-content";
 import { SettingsContent } from "./settings-content";
 import { Sidebar } from "./sidebar";
 
-export const BASE_URL = "http://113.198.229.153:4001/api/v1"; //나중에 환경변수로 빼자
-export const SERVER_NUMBER = 13;
+export const BASE_URL = "http://34.64.34.211:8000/api/v1"; //나중에 환경변수로 빼자
+export const SERVER_NUMBER = 1;
 
 export interface ContainerType {
   cgroup_id: number;
@@ -26,7 +26,7 @@ export interface ContainerType {
   tag: any[];
 }
 
-export type activeTabType = "dashboard"|"policy"|"containers"|"settings"
+export type activeTabType = "dashboard" | "policy" | "containers" | "settings"
 
 
 export const ContainerPolicyManagerComponent = () => {
@@ -35,14 +35,14 @@ export const ContainerPolicyManagerComponent = () => {
   const [containerList, setContainerList] = useState<ContainerType[]>([]);
 
   useEffect(() => {
-    if(isLoggedIn){
+    if (isLoggedIn) {
       axios
-      .get(`${BASE_URL}/container/${SERVER_NUMBER}`)
-      .then((res) => {
-        setContainerList(res.data.containers);
-      })
-      .catch((err) => {console.log(err);window.alert("Login Failed")});
-    }else{}
+        .get(`${BASE_URL}/container/${SERVER_NUMBER}`)
+        .then((res) => {
+          setContainerList(res.data.containers);
+        })
+        .catch((err) => { console.log(err); window.alert("Login Failed") });
+    } else { }
   }, [isLoggedIn]);
 
   const handleLogin = (username: string, password: string) => {
@@ -76,7 +76,7 @@ export const ContainerPolicyManagerComponent = () => {
         )}
         {activeTab === "policy" && (
           <PolicyContent
-            onRedirect={()=>handleRedirect('policy')}
+            onRedirect={() => handleRedirect('policy')}
             containerList={containerList}
           />
         )}

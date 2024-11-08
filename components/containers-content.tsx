@@ -43,68 +43,69 @@ const generateLogs = () => {
 
 
 export const ContainersContent = ({ containerList }: { containerList: ContainerType[] }) => {
-  
+
   const [selectedContainer, setSelectedContainer] = useState<ContainerType>();
   const [containerLogOption, setContainerLogOption] = useState<logOption>("all");
 
-  const ResourceInfo = ({UsageTitle,Usage} : {UsageTitle:string,Usage:string}) => {
-    return(
-    <div>
-      <p className="text-sm text-gray-500">{UsageTitle}</p>
-      <p className="text-lg font-semibold">{Usage}</p>
-    </div>
+  const ResourceInfo = ({ UsageTitle, Usage }: { UsageTitle: string, Usage: string }) => {
+    return (
+      <div>
+        <p className="text-sm text-gray-500">{UsageTitle}</p>
+        <p className="text-lg font-semibold">{Usage}</p>
+      </div>
     )
   }
 
   const renderContainerList = () => {
-    return(
-    <>
-      <h1 className="text-3xl font-bold mb-6 text-blue-700">Containers</h1>
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Server Resources</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center">
-              <Cpu className="h-8 w-8 mr-2 text-blue-500" />
-              <ResourceInfo UsageTitle="CPU Usage" Usage="65%" />
+    return (
+      <>
+        <h1 className="text-3xl font-bold mb-6 text-blue-700">Containers</h1>
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Server Resources</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center">
+                <Cpu className="h-8 w-8 mr-2 text-blue-500" />
+                <ResourceInfo UsageTitle="CPU Usage" Usage="65%" />
               </div>
-            <div className="flex items-center">
-              <HardDrive className="h-8 w-8 mr-2 text-blue-500" />
-              <ResourceInfo UsageTitle="Memory Usage" Usage="8.2 GB / 16 GB" />
+              <div className="flex items-center">
+                <HardDrive className="h-8 w-8 mr-2 text-blue-500" />
+                <ResourceInfo UsageTitle="Memory Usage" Usage="8.2 GB / 16 GB" />
+              </div>
+              <div className="flex items-center">
+                <Database className="h-8 w-8 mr-2 text-blue-500" />
+                <ResourceInfo UsageTitle="Storage Usage" Usage="234 GB / 500 GB" />
+              </div>
             </div>
-            <div className="flex items-center">
-              <Database className="h-8 w-8 mr-2 text-blue-500" />
-              <ResourceInfo UsageTitle="Storage Usage" Usage="234 GB / 500 GB" />             
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-      <p className="text-xl mb-4">Total Containers: {containerList.length}</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {containerList &&
-          containerList.map((container) => (
-            <Card
-              key={container.id}
-              className="cursor-pointer hover:shadow-md transition-shadow"
-            >
-              <CardHeader>
-                <CardTitle>{container.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={() => setSelectedContainer(container)}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >
-                  View Details
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-      </div>
-    </>
-  )};
+          </CardContent>
+        </Card>
+        <p className="text-xl mb-4">Total Containers: {containerList.length}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {containerList &&
+            containerList.map((container) => (
+              <Card
+                key={container.id}
+                className="cursor-pointer hover:shadow-md transition-shadow"
+              >
+                <CardHeader>
+                  <CardTitle>{container.name}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    onClick={() => setSelectedContainer(container)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    View Details
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+        </div>
+      </>
+    )
+  };
 
   const renderContainerDetails = () => (
     <>
@@ -128,7 +129,7 @@ export const ContainersContent = ({ containerList }: { containerList: ContainerT
               <Select
                 value={containerLogOption}
                 onValueChange={(value: logOption) => setContainerLogOption(value)}
-                >
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select log option" />
                 </SelectTrigger>

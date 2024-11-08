@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { FileText, Box, Settings, LayoutDashboard, LogOut } from 'lucide-react'
 
-import {activeTabType} from "./container-policy-manager"
+import { activeTabType } from "./container-policy-manager"
 
 export const Sidebar = ({ activeTab, setActiveTab, onLogout }: { activeTab: activeTabType, setActiveTab: (activeTab: activeTabType) => void, onLogout: () => void }) => {
   return (
@@ -26,9 +26,8 @@ export const Sidebar = ({ activeTab, setActiveTab, onLogout }: { activeTab: acti
               <Button
                 key={index}
                 variant="ghost"
-                className={`w-full flex-1 flex flex-col items-center justify-center text-white ${
-                  isActive ? 'bg-blue-700 text-xl' : 'text-lg'
-                } hover:bg-blue-500`}
+                className={`w-full flex-1 flex flex-col items-center justify-center text-white ${isActive ? 'bg-blue-700 text-xl' : 'text-lg'
+                  } hover:bg-blue-500`}
                 onClick={() => setActiveTab(tab as activeTabType)}
               >
                 <Icon className={`mb-1 ${isActive ? 'h-20 w-20' : 'h-6 w-6'}`} />
