@@ -22,6 +22,7 @@ import {
   SERVER_NUMBER,
 } from "./container-policy-manager";
 import { logLevel, Policy, FilePolicyFlags, NetworkPolicyFlags, ProcessPolicyFlags, PolicyOptionType, CreatePolicyOptionType, NetworkArgument, CustomPolicyStepType, webServerRulesPolicy, blockRootUserPolicy, blockContainerEscapePolicy } from "./data/Mock";
+import yaml from 'js-yaml';
 
 
 export const PolicyContent = ({
@@ -399,7 +400,8 @@ export const PolicyContent = ({
         <Card className="mt-6">
           <CardContent>
             <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-              {JSON.stringify(selectedPredefinedPolicy,null,2)}
+            {yaml.dump(selectedPredefinedPolicy)} 
+              {/* {JSON.stringify(selectedPredefinedPolicy,null,2)} */}
             </pre>
             <Button
               onClick={() => handleApplyPolicy(true)}
@@ -627,7 +629,8 @@ export const PolicyContent = ({
         <div className="space-y-4">
           <h2 className="text-2xl font-bold">Final Policy</h2>
           <pre className="bg-gray-100 p-4 rounded-md overflow-x-auto">
-            {JSON.stringify(finalPolicy,null,2)}
+          {yaml.dump(finalPolicy)} 
+            {/* {JSON.stringify(finalPolicy,null,2)} */}
           </pre>
           <Button
             onClick={() => handleApplyPolicy()}
