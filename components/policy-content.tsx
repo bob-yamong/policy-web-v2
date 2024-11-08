@@ -49,7 +49,7 @@ export const PolicyContent = ({
     port: 22,
     protocol: 0
   });
-  const [sudoUid, setSudoUid] = useState<number>();
+  const [sudoUid, setSudoUid] = useState<number| "">();
 
   const renderPolicyYaml = (
     selectedContainer: ContainerType,
@@ -610,8 +610,17 @@ export const PolicyContent = ({
               id="uid"
               placeholder="Enter UID"
               value={sudoUid}
-              onChange={(e) => setSudoUid(Number(e.target.value))}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (isNaN(Number(value))) {
+                  window.alert("Please enter a valid number.");
+                  setSudoUid(""); 
+                  return; 
+                }
+                setSudoUid(Number(value)); 
+              }}
             />
+
           </div>
         )}
         {selectedActions.includes("ml-analysis") && (
