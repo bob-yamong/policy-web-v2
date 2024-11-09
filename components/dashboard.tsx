@@ -1,7 +1,4 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import dynamic from "next/dynamic";
 import {
   Bar,
   BarChart,
@@ -13,24 +10,47 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  PieChart,
+  Pie
 } from "recharts";
-import {
-  cpuData,
-  networkData,
-  diskData,
-  memoryData,
-  ResourceDataType,
-  LineType,
-  CPU_LINE_ARRAY,
-  NETWORK_LINE_ARRAY,
-} from "./data/Mock";
+import { cpuData, networkData, diskData, memoryData, ResourceDataType, LineType, CPU_LINE_ARRAY, NETWORK_LINE_ARRAY } from "./data/Mock";
 import { ContainerType } from "./container-policy-manager";
+import Table from "./table"; // Ensure the correct path
 
-// Dynamically import client-side components to avoid SSR issues
-const Heatmap = dynamic(() => import("react-heatmap-grid"), { ssr: false });
-const Table = dynamic(() => import("./Table"), { ssr: false });
+// Mock Data for testing
+const mockCpuData = [
+  { time: '00:00', temperature: 45, load_average: 1.2, processes: 220 },
+  { time: '01:00', temperature: 47, load_average: 1.5, processes: 230 },
+  { time: '02:00', temperature: 50, load_average: 1.7, processes: 250 },
+  { time: '03:00', temperature: 55, load_average: 1.8, processes: 260 },
+  { time: '04:00', temperature: 60, load_average: 2.0, processes: 270 },
+];
+
+const mockContainerData = [
+  { name: "Container 1", ip: "192.168.1.1", uptime: "3 days", cpu: "12%", memory: "75%" },
+  { name: "Container 2", ip: "192.168.1.2", uptime: "1 day", cpu: "30%", memory: "65%" },
+  { name: "Container 3", ip: "192.168.1.3", uptime: "5 hours", cpu: "45%", memory: "50%" },
+  { name: "Container 4", ip: "192.168.1.4", uptime: "12 hours", cpu: "20%", memory: "60%" },
+];
+
+// Mock Alert Data
+const mockAlerts = [
+  { type: "Memory Spike", container: "Container 3", severity: "Critical" },
+  { type: "High CPU Usage", container: "Container 2", severity: "Warning" },
+  { type: "Disk Full", container: "Container 1", severity: "Critical" },
+  { type: "Network Traffic", container: "Container 4", severity: "Info" },
+];
+
+// Mock Server Status
+const mockServerStatus = {
+  status: "Running",
+  lastChecked: "10 minutes ago",
+  diskSpace: "80% used",
+  memoryUsage: "70% used",
+};
 
 export const Dashboard = ({ containerList }: { containerList: ContainerType[] }) => {
+
   const ResoureGraph = ({ title, data, lineArray }: { title: string, data: ResourceDataType, lineArray: LineType[] }) => (
     <Card>
       <CardHeader>
@@ -78,54 +98,177 @@ export const Dashboard = ({ containerList }: { containerList: ContainerType[] })
     </Card>
   );
 
+  // Disk Usage Donut Chart
+  const DiskUsageDonut = ({ used, total }: { used: number, total: number }) => {
+    const data = [
+      { name: 'Used', value: used, fill: '#82ca9d' },
+      { name: 'Free', value: total - used, fill: '#ccc' }
+    ];
+
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Disk Usage</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[200px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={data} dataKey="value" outerRadius={80} innerRadius={60} fill="#82ca9d" />
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="text-center mt-2">Total: {total}GB</p>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Memory Usage Line Graph
+  const MemoryUsageLine = ({ data }: { data: ResourceDataType }) => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Memory Usage</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[200px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="value" stroke="#8884d8" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-blue-700">Dashboard</h1>
+      
       {/* Resource Overview Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <ResoureGraph title="CPU Usage per Core" data={cpuData} lineArray={CPU_LINE_ARRAY} />
         <ResoureGraph title="Network Traffic" data={networkData} lineArray={NETWORK_LINE_ARRAY} />
-        <UsageGraph title="Memory Usage" data={memoryData} color="#8884d8" totalValue="Total: 16GB" />
-        <UsageGraph title="Disk Usage" data={diskData} color="#82ca9d" totalValue="Total: 500GB" />
+        <MemoryUsageLine data={memoryData} />
+        <DiskUsageDonut used={400} total={500} /> {/* Example: 400GB used, 500GB total */}
       </div>
 
-      {/* Container Status Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Container Status</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {containerList.map((container: ContainerType) => (
-              <div key={container.name} className="text-center">
-                <div
-                  className={`w-4 h-4 rounded-full mx-auto mb-2 ${container.remove_at ? "bg-red-500" : "bg-green-500"
-                    }`}
-                ></div>
-                <p>{container.name}</p>
-                <p className="text-sm text-gray-500 capitalize">
-                  {container.remove_at}
-                </p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Server Health & Metrics Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        
+        {/* CPU Temperature */}
+        <Card>
+          <CardHeader>
+            <CardTitle>CPU Temperature</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mockCpuData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line dataKey="temperature" stroke="#ff7300" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* Heatmap for Resource Usage */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Resource Utilization Heatmap</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Heatmap
-            xLabels={['Core 1', 'Core 2', 'Core 3', 'Core 4']}
-            yLabels={['Container 1', 'Container 2', 'Container 3']}
-            data={[[10, 20, 30, 40], [40, 30, 20, 10], [15, 35, 55, 75]]}
-            cellRender={(x, y, value) => `${value}%`}
-          />
-        </CardContent>
-      </Card>
+        {/* Server Uptime */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Server Uptime</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={mockCpuData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="time" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line dataKey="uptime" stroke="#82ca9d" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Services Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Services Status</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <p>Service 1</p>
+                <span className="text-green-500">Active</span>
+              </div>
+              <div className="flex justify-between">
+                <p>Service 2</p>
+                <span className="text-red-500">Inactive</span>
+              </div>
+              <div className="flex justify-between">
+                <p>Service 3</p>
+                <span className="text-yellow-500">Warning</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+      </div>
+
+      {/* New Visualizations Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+        
+        {/* Server Load Average */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Server Load Average</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p>Current Load: 1.5</p>
+              <p>Last 5 minutes: 1.2</p>
+              <p>Last 15 minutes: 1.7</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Number of Processes Running */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Number of Processes Running</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p>Current Processes: 250</p>
+              <p>Average Load: 1.8</p>
+              <p>Processes Over Time: </p>
+              <LineChart data={mockCpuData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="time" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line dataKey="processes" stroke="#ff7300" />
+              </LineChart>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Active Containers Table */}
       <Card>
@@ -133,7 +276,7 @@ export const Dashboard = ({ containerList }: { containerList: ContainerType[] })
           <CardTitle>Active Containers</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table data={containerList} columns={["Name", "IP", "Uptime", "CPU%", "Memory%"]} />
+          <Table data={mockContainerData} columns={["Name", "IP", "Uptime", "CPU%", "Memory%"]} />
         </CardContent>
       </Card>
 
@@ -144,11 +287,29 @@ export const Dashboard = ({ containerList }: { containerList: ContainerType[] })
         </CardHeader>
         <CardContent>
           <ul>
-            <li>Memory spike detected on Container 3 - <span className="text-red-500">Critical</span></li>
-            <li>High network traffic on Container 12 - <span className="text-yellow-500">Warning</span></li>
+            {mockAlerts.map((alert, index) => (
+              <li key={index} className={alert.severity === "Critical" ? "text-red-500" : "text-yellow-500"}>
+                {alert.type} on {alert.container} - <span>{alert.severity}</span>
+              </li>
+            ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      {/* Server Status Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Server Status</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <p>Status: {mockServerStatus.status}</p>
+            <p>Last Checked: {mockServerStatus.lastChecked}</p>
+            <p>Disk Space: {mockServerStatus.diskSpace}</p>
+            <p>Memory Usage: {mockServerStatus.memoryUsage}</p>
+          </div>
         </CardContent>
       </Card>
     </div>
   );
-};
+}
